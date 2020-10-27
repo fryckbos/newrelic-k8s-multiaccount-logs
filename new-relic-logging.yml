@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: newrelic-logging
+  namespace: default
+  labels:
+    k8s-app: newrelic-logging
+    version: v1
+    kubernetes.io/cluster-service: "true"
+    name: newrelic-logging
+    app.kubernetes.io/name: newrelic-logging
+spec:
+  selector:
+    matchLabels:
+      name: newrelic-logging
+  template:
+    metadata:
+      labels:
+        k8s-app: newrelic-logging
+        version: v1
+        kubernetes.io/cluster-service: "true"
+        name: newrelic-logging
+        app.kubernetes.io/name: newrelic-logging
+    spec:
+      serviceAccountName: newrelic-logging
+      containers:
+        - name: newrelic-logging
+          env:
+            - name: SOURCE
+              value: "kubernetes"
+            - name: CLUSTER_NAME
+              value: "Cluster1"
+            - name: LOG_LEVEL
+              value: "info"
+            - name: LOG_PATH
+              value: "/var/log/containers/*.log"
+            - name: SECRET
+              value: "my-secret"
+            - name: SECRET_KEY
+              value: "nr-license"
+          image: fryckbos/newrelic-log-test
+          resources:
+            limits:
+              cpu: 500m
+              memory: 128Mi
+            requests:
+              cpu: 250m
+              memory: 64Mi
+          volumeMounts:
+            - name: config
+              mountPath: /fluent-bit/etc
+            - name: varlog
+              mountPath: /var
+      terminationGracePeriodSeconds: 10
+      volumes:
+        - name: config
+          configMap:
+            name: fluent-bit-config
+        - name: varlog
+          hostPath:
+            path: /var
